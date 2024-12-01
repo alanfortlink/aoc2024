@@ -33,9 +33,7 @@ fn q1(reader: BufReader<File>) {
 
     for line in reader.lines() {
         if let Ok(content) = line {
-            let mut split = content
-                .split_whitespace()
-                .map(|v| v.parse::<i32>().unwrap());
+            let mut split = content.split_whitespace().map(|v| v.parse().unwrap());
 
             left.push(split.next().unwrap());
             right.push(split.next().unwrap());
@@ -60,9 +58,7 @@ fn q2(reader: BufReader<File>) {
 
     for line in reader.lines() {
         if let Ok(content) = line {
-            let mut split = content
-                .split_whitespace()
-                .map(|v| v.parse::<i32>().unwrap());
+            let mut split = content.split_whitespace().map(|v| v.parse().unwrap());
 
             left.push(split.next().unwrap());
             let right = split.next().unwrap();
