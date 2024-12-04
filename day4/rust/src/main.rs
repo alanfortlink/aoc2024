@@ -45,39 +45,38 @@ fn q1(matrix: &Vec<Vec<char>>) -> usize {
         (-1, 1),
         (-1, -1),
     ];
-    let mut C: HashSet<(i32, i32, (i32, i32))> = HashSet::new();
 
-    for (i, row) in matrix.iter().enumerate() {
-        for j in 0..row.len() {
-            for dir in directions {
-                if search(&matrix, "XMAS", 0, i as i32, j as i32, dir) {
-                    C.insert((i as i32, j as i32, dir));
-                }
-            }
-        }
-    }
-
-    C.len()
+    matrix
+        .iter()
+        .enumerate()
+        .map(|(i, r)| {
+            (0..r.len())
+                .map(move |j| {
+                    directions
+                        .iter()
+                        .filter(|dir| search(matrix, "XMAS", 0, i as i32, j as i32, **dir))
+                        .count()
+                })
+                .sum::<usize>()
+        })
+        .sum::<usize>()
 }
 
 fn q2(matrix: &Vec<Vec<char>>) -> usize {
-    let mut c: HashSet<(usize, usize)> = HashSet::new();
-
-    for (i, row) in matrix.iter().enumerate() {
-        for j in 0..row.len() {
-            let is_first_mas = search(matrix, "MAS", 0, i as i32 + 1, j as i32 - 1, (-1, 1))
-                || search(matrix, "MAS", 0, i as i32 - 1, j as i32 + 1, (1, -1));
-
-            let is_second_mas = search(matrix, "MAS", 0, i as i32 - 1, j as i32 - 1, (1, 1))
-                || search(matrix, "MAS", 0, i as i32 + 1, j as i32 + 1, (-1, -1));
-
-            if is_first_mas && is_second_mas {
-                c.insert((i, j));
-            }
-        }
-    }
-
-    c.len()
+    matrix
+        .iter()
+        .enumerate()
+        .map(|(i, r)| {
+            (0..r.len())
+                .filter(move |j| {
+                    (search(matrix, "MAS", 0, i as i32 + 1, *j as i32 - 1, (-1, 1))
+                        || search(matrix, "MAS", 0, i as i32 - 1, *j as i32 + 1, (1, -1)))
+                        && (search(matrix, "MAS", 0, i as i32 - 1, *j as i32 - 1, (1, 1))
+                            || search(matrix, "MAS", 0, i as i32 + 1, *j as i32 + 1, (-1, -1)))
+                })
+                .count()
+        })
+        .sum::<usize>()
 }
 
 fn main() {
