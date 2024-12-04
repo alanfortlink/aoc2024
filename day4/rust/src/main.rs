@@ -16,21 +16,16 @@ fn search(
         return true;
     }
 
-    if i < 0 || j < 0 {
+    if i < 0 || j < 0 || i >= matrix.len() as i32 || j >= matrix.first().unwrap().len() as i32 {
         return false;
     }
 
-    let row = matrix.get(i as usize);
-    if row.is_none() {
-        return false;
-    }
+    let value = matrix
+        .get(i as usize)
+        .and_then(|row| row.get(j as usize))
+        .unwrap();
 
-    let value = row.unwrap().get(j as usize);
-    if value.is_none() {
-        return false;
-    }
-
-    return *value.unwrap() == needle.chars().nth(index).unwrap()
+    return *value == needle.chars().nth(index).unwrap()
         && search(matrix, needle, index + 1, i + dir.0, j + dir.1, dir);
 }
 
