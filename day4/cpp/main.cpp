@@ -59,5 +59,5 @@ int main() {
   string line;
   for (string line; fs >> line; matrix.push_back(line))
     ;
-  cout << q1(matrix) << endl;
+  cout << q2(matrix) << endl;
 }
