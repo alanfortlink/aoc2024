@@ -27,35 +27,30 @@ int q1(const vector<string> &matrix) {
   };
 
   return ranges::fold_left(
-      ranges::views::iota(static_cast<size_t>(0), matrix.size()) |
-          ranges::views::transform([&](int i) {
-            return ranges::fold_left(
-                ranges::views::iota(static_cast<size_t>(0), matrix[i].size()) |
-                    ranges::views::transform([&](int j) {
-                      return ranges::distance(
-                          directions | ranges::views::filter([&](auto dir) {
-                            return is_match(matrix, "XMAS", 0, i, j, dir);
-                          }));
-                    }),
-                0, plus<>{});
+      views::iota(size_t{0}, matrix.size() * matrix[0].size()) |
+          views::transform([&](int p) {
+            return ranges::count_if(
+                ranges::begin(directions), ranges::end(directions),
+                [&](auto dir) {
+                  return is_match(matrix, "XMAS", 0, p / matrix[0].size(),
+                                  p % matrix[0].size(), dir);
+                });
           }),
       0, plus<>{});
 }
 
 int q2(const vector<string> &matrix) {
-  int count = 0;
-  for (size_t i = 0; i < matrix.size(); i++) {
-    for (size_t j = 0; j < matrix.size(); j++) {
-      if ((is_match(matrix, "MAS", 0, i + 1, j - 1, {-1, 1}) ||
-           is_match(matrix, "MAS", 0, i - 1, j + 1, {1, -1})) &&
-          (is_match(matrix, "MAS", 0, i - 1, j - 1, {1, 1}) ||
-           is_match(matrix, "MAS", 0, i + 1, j + 1, {-1, -1}))) {
-        count += 1;
-      }
-    }
-  }
-
-  return count;
+  return ranges::fold_left(
+      views::iota(size_t{0}, matrix.size() * matrix[0].size()) |
+          views::transform([&](int p) {
+            int i = p / matrix[0].size();
+            int j = p % matrix[0].size();
+            return (is_match(matrix, "MAS", 0, i + 1, j - 1, {-1, 1}) ||
+                    is_match(matrix, "MAS", 0, i - 1, j + 1, {1, -1})) &&
+                   (is_match(matrix, "MAS", 0, i - 1, j - 1, {1, 1}) ||
+                    is_match(matrix, "MAS", 0, i + 1, j + 1, {-1, -1}));
+          }),
+      0, plus<>{});
 }
 
 int main() {
@@ -64,5 +59,5 @@ int main() {
   string line;
   for (string line; fs >> line; matrix.push_back(line))
     ;
-  cout << q2(matrix) << endl;
+  cout << q1(matrix) << endl;
 }
