@@ -1,3 +1,4 @@
+#include <charconv>
 #include <fstream>
 #include <iostream>
 #include <queue>
@@ -70,19 +71,19 @@ int main(int argc, char *argv[]) {
   fstream fs(argv[1]);
   cpp_int ans = 0;
   for (string line; getline(fs, line);) {
-    stringstream ss(line);
     string buf;
+    for (stringstream ss(line); ss >> buf;) {
+      buf.pop_back();
+      const cpp_int target = cpp_int(buf);
+      vector<cpp_int> numbers;
 
-    ss >> buf;
-    const cpp_int target = cpp_int(buf.substr(0, buf.size() - 1));
-    vector<cpp_int> numbers;
+      while (ss >> buf) {
+        numbers.push_back(cpp_int(buf));
+      }
 
-    while (ss >> buf) {
-      numbers.push_back(cpp_int(buf));
-    }
-
-    if (q2(numbers, target)) {
-      ans += target;
+      if (q2(numbers, target)) {
+        ans += target;
+      }
     }
   }
 
