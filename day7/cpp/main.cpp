@@ -27,7 +27,7 @@ bool q1(const vector<cpp_int> &nums, cpp_int target) {
       return true;
     }
 
-    if (s.current > target || s.index == nums.size()) {
+    if (s.current > target || s.index == nums.size() - 1) {
       continue;
     }
 
@@ -38,12 +38,12 @@ bool q1(const vector<cpp_int> &nums, cpp_int target) {
   return false;
 }
 
-bool q2(const vector<cpp_int> &nums, cpp_int target) {
+bool q2(const vector<cpp_int> &nums, const cpp_int &target) {
   queue<state> q{};
   q.push(state{nums[0], 0});
 
   while (!q.empty()) {
-    state s = std::move(q.front());
+    const state s = std::move(q.front());
     q.pop();
 
     if (s.current == target && s.index == nums.size() - 1) {
@@ -54,11 +54,13 @@ bool q2(const vector<cpp_int> &nums, cpp_int target) {
       continue;
     }
 
-    const cpp_int next = nums[s.index + 1];
+    const cpp_int &next = nums[s.index + 1];
 
-    q.push(state{s.current + next, s.index + 1});
-    q.push(state{s.current * next, s.index + 1});
-    q.push(state{cpp_int(to_string(s.current) + to_string(next)), s.index + 1});
+    q.push(std::move(state{s.current + next, s.index + 1}));
+    q.push(std::move(state{s.current * next, s.index + 1}));
+    q.push(std::move(state{
+        cpp_int(std::move(to_string(s.current)) + std::move(to_string(next))),
+        s.index + 1}));
   }
 
   return false;
