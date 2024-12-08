@@ -1,9 +1,9 @@
 #include <algorithm>
 #include <fstream>
 #include <iostream>
-#include <numeric>
 #include <ranges>
 #include <string>
+#include <vector>
 
 using namespace std;
 
@@ -53,8 +53,8 @@ int q2(const vector<string> &matrix) {
       0, plus<>{});
 }
 
-int main() {
-  fstream fs("../input.txt");
+int main(int argc, char *argv[]) {
+  fstream fs(argv[1]);
   vector<string> matrix;
   string line;
   for (string line; fs >> line; matrix.push_back(line))
