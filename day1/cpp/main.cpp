@@ -71,7 +71,8 @@ void q2(fstream &fileStream) {
     freq[r]++;
   }
 
-  auto similarities = ranges::views::transform(left, [&](int l){ return l * freq[l]; });
+  auto similarities =
+      ranges::views::transform(left, [&](int l) { return l * freq[l]; });
   auto result = ranges::fold_left(similarities, 0, plus<int>{});
 
   cout << result << endl;
