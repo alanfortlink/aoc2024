@@ -1,7 +1,6 @@
 #include <cstdint>
 #include <fstream>
 #include <iostream>
-#include <ranges>
 #include <unordered_map>
 #include <utility>
 
@@ -36,7 +35,7 @@ uint64_t calc(uint64_t n, int blinks, int limit) {
 
   int d = digits(n);
   if (d % 2 == 0) {
-    const auto& [lhs, rhs] = split_number(n, d / 2);
+    const auto &[lhs, rhs] = split_number(n, d / 2);
     return C[key] = calc(lhs, blinks + 1, limit) + calc(rhs, blinks + 1, limit);
   }
 
