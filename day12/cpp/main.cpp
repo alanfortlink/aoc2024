@@ -21,14 +21,14 @@ ostream &operator<<(ostream &out, const edge &e) {
   return out;
 }
 
-auto pair_hash = [](const coord &v) { return v.first ^ v.second; };
+auto coord_hash = [](const coord &v) { return v.first ^ v.second; };
 auto edge_hash = [](const edge &e) {
-  return pair_hash(e.first) ^ pair_hash(e.second);
+  return coord_hash(e.first) ^ coord_hash(e.second);
 };
 
-typedef unordered_set<coord, decltype(pair_hash)> pair_set;
+typedef unordered_set<coord, decltype(coord_hash)> coord_set;
 typedef unordered_set<edge, decltype(edge_hash)> edge_set;
-typedef unordered_map<edge, unordered_set<coord, decltype(pair_hash)>,
+typedef unordered_map<edge, unordered_set<coord, decltype(coord_hash)>,
                       decltype(edge_hash)>
     edge_map;
 
@@ -38,9 +38,9 @@ bool in_bounds(const vector<string> &grid, int i, int j) {
   return i >= 0 && i < grid.size() && j >= 0 && j < grid[i].size();
 }
 
-int calc_perimiter(const vector<string> &grid, const pair_set &visited) {
+int calc_perimiter(const vector<string> &grid, const coord_set &region) {
   int open_sides = 0;
-  for (const auto &[i, j] : visited) {
+  for (const auto &[i, j] : region) {
     for (const auto &[di, dj] : directions) {
       const int ni = i + di;
       const int nj = j + dj;
@@ -70,7 +70,7 @@ void remove_neighbors(edge_set &edges, edge_map &seen, edge e, coord dir) {
   remove_neighbors(edges, seen, ne, dir);
 }
 
-int calc_sides(const vector<string> &grid, const pair_set region) {
+int calc_sides(const vector<string> &grid, const coord_set region) {
   edge_set edges;
   for (const auto &[i, j] : region) {
     for (const auto &[di, dj] : directions) {
@@ -108,8 +108,8 @@ int calc_sides(const vector<string> &grid, const pair_set region) {
   return count;
 }
 
-void walk(const vector<string> &grid, char crop, int start_i, int start_j,
-          pair_set &visited) {
+void get_region(const vector<string> &grid, char crop, int start_i, int start_j,
+                coord_set &region) {
   stack<coord> s{};
   s.push({start_i, start_j});
 
@@ -125,11 +125,11 @@ void walk(const vector<string> &grid, char crop, int start_i, int start_j,
       continue;
     }
 
-    if (visited.contains({i, j})) {
+    if (region.contains({i, j})) {
       continue;
     }
 
-    visited.insert({i, j});
+    region.insert({i, j});
 
     for (const auto &[di, dj] : directions) {
       s.push({i + di, j + dj});
@@ -140,25 +140,23 @@ void walk(const vector<string> &grid, char crop, int start_i, int start_j,
 int q1(vector<string> &grid) {
   int fencing_cost = 0;
 
-  pair_set all_visited;
+  coord_set visited;
   for (int i = 0; i < grid.size(); i++) {
     for (int j = 0; j < grid[i].size(); j++) {
-      if (all_visited.contains({i, j})) {
+      if (visited.contains({i, j})) {
         continue;
       }
 
       char crop = grid[i][j];
-      pair_set visited;
-      walk(grid, crop, i, j, visited);
+      coord_set region;
+      get_region(grid, crop, i, j, region);
 
-      const int area = visited.size();
-      const int perimeter = calc_perimiter(grid, visited);
+      const int area = region.size();
+      const int perimeter = calc_perimiter(grid, region);
 
       fencing_cost += area * perimeter;
 
-      for (const auto &v : visited) {
-        all_visited.insert(v);
-      }
+      visited.insert(region.begin(), region.end());
     }
   }
 
@@ -168,25 +166,23 @@ int q1(vector<string> &grid) {
 int q2(vector<string> &grid) {
   int fencing_cost = 0;
 
-  pair_set all_visited;
+  coord_set visited;
   for (int i = 0; i < grid.size(); i++) {
     for (int j = 0; j < grid[i].size(); j++) {
-      if (all_visited.contains({i, j})) {
+      if (visited.contains({i, j})) {
         continue;
       }
 
       char crop = grid[i][j];
-      pair_set visited;
-      walk(grid, crop, i, j, visited);
+      coord_set region;
+      get_region(grid, crop, i, j, region);
 
-      const int area = visited.size();
-      const int sides = calc_sides(grid, visited);
+      const int area = region.size();
+      const int sides = calc_sides(grid, region);
 
       fencing_cost += area * sides;
 
-      for (const auto &v : visited) {
-        all_visited.insert(v);
-      }
+      visited.insert(region.begin(), region.end());
     }
   }
 
@@ -199,6 +195,6 @@ int main(int argc, char **argv) {
   for (string line; fs >> line; grid.push_back(line))
     ;
 
-  int fencing_cost = q2(grid);
-  cout << fencing_cost << endl;
+  cout << q1(grid) << endl;
+  cout << q2(grid) << endl;
 }
