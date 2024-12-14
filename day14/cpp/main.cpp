@@ -1,10 +1,10 @@
-
-
+#include <algorithm>
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
+#include <limits>
 #include <ratio>
 #include <thread>
 #include <unistd.h>
@@ -72,7 +72,6 @@ int get_quadrant(const robot &r, int seconds, v2 grid_size) {
 
 int main_part1(int argc, char **argv) {
   fstream fs(argc == 2 ? argv[1] : "../example.txt");
-  int res = 1;
 
   vector<int> quadrants(4, 0);
 
@@ -100,9 +99,9 @@ void render(const vector<vector<char>> &canvas) {
   cout << endl;
 }
 
-int main(int argc, char **argv) {
+// SIMULATION
+int main_part2(int argc, char **argv) {
   fstream fs(argc == 2 ? argv[1] : "../example.txt");
-  int res = 1;
 
   vector<robot> robots;
   for (string line; getline(fs, line);) {
@@ -145,3 +144,5 @@ int main(int argc, char **argv) {
     }
   }
 }
+
+int main(int argc, char **argv) { return main_part2(argc, argv); }
