@@ -1,0 +1,158 @@
+#include <algorithm>
+#include <bits/ranges_algo.h>
+#include <fstream>
+#include <iostream>
+#include <ranges>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
+using namespace std;
+
+struct coord {
+  int row;
+  int col;
+};
+bool operator==(const coord &lhs, const coord &rhs) {
+  return lhs.row == rhs.row && lhs.col == rhs.col;
+}
+coord operator+(const coord &lhs, const coord &rhs) {
+  return {lhs.row + rhs.row, lhs.col + rhs.col};
+}
+auto coord_hash = [](const coord &c) { return c.row ^ c.col; };
+typedef unordered_set<coord, decltype(coord_hash)> coord_set;
+typedef unordered_map<coord, bool, decltype(coord_hash)> coord_map;
+
+// bool = "is_left"
+typedef unordered_map<coord, bool, decltype(coord_hash)> box_map;
+
+coord get_dir(char c) {
+  switch (c) {
+  case '>':
+    return {0, 1};
+  case '<':
+    return {0, -1};
+  case '^':
+    return {-1, 0};
+  case 'v':
+    return {1, 0};
+  default:
+    throw runtime_error("unexpected value: " + to_string(c));
+  }
+}
+
+pair<coord, coord> get_box_pair(const coord &pos, const box_map &boxes) {
+  auto it = boxes.find(pos);
+  if (it->second) {
+    return {pos, {pos.row, pos.col + 1}};
+  }
+
+  return {{pos.row, pos.col - 1}, pos};
+}
+
+bool can_clear_way(const coord &pos, const coord &dir, const coord_set &walls,
+                   box_map &boxes, coord_map &seen) {
+  if (walls.contains(pos)) {
+    return false;
+  }
+
+  if (boxes.contains(pos)) {
+    if (seen.contains(pos)) {
+      return seen[pos];
+    }
+
+    auto [bl, br] = get_box_pair(pos, boxes);
+    return seen[pos] = can_clear_way(bl + dir, dir, walls, boxes, seen) &&
+                       can_clear_way(br + dir, dir, walls, boxes, seen);
+  }
+
+  return true;
+}
+
+void clear_way(const coord &pos, const coord &dir, const coord_set &walls,
+               box_map &boxes, coord_set &seen) {
+  if (walls.contains(pos)) {
+    return;
+  }
+
+  if (boxes.contains(pos)) {
+    auto [bl, br] = get_box_pair(pos, boxes);
+    clear_way(bl + dir, dir, walls, boxes, seen);
+    clear_way(br + dir, dir, walls, boxes, seen);
+
+    boxes.erase(bl);
+    boxes.erase(br);
+
+    boxes[bl + dir] = true;
+    boxes[br + dir] = false;
+  }
+}
+
+void simulate(const string &moves, const coord &robot, const coord_set &walls,
+              box_map &boxes) {
+  coord pos = robot;
+  for (char m : moves) {
+    coord dir = get_dir(m);
+    coord new_pos = pos + dir;
+    coord_map seen_map;
+    if (can_clear_way(new_pos, dir, walls, boxes, seen_map)) {
+      coord_set seen;
+      clear_way(new_pos, dir, walls, boxes, seen);
+      pos = new_pos;
+    }
+  }
+}
+
+int main(int argc, char **argv) {
+  fstream fs(argc == 2 ? argv[1] : "../small_example.txt");
+
+  coord robot;
+  coord_set walls;
+  box_map boxes;
+
+  int row = 0;
+
+  // read map
+  for (string line; getline(fs, line); row++) {
+    if (line.empty()) {
+      break;
+    }
+
+    for (int col = 0; col < line.size(); col++) {
+      coord p{row, col * 2};
+      coord pn{row, col * 2 + 1};
+      const char c = line[col];
+
+      if (c == '.') {
+        continue;
+      }
+
+      if (c == '#') {
+        walls.insert(p);
+        walls.insert(pn);
+      } else if (c == 'O') {
+        boxes[p] = true;
+        boxes[pn] = false;
+      } else if (c == '@') {
+        robot = p;
+      }
+    }
+  }
+
+  // reading moves
+  stringstream moves_ss;
+  for (string line; getline(fs, line); moves_ss << line)
+    ;
+
+  const string &moves = moves_ss.str();
+  simulate(moves, robot, walls, boxes);
+
+  const int total = ranges::fold_left(
+      boxes | ranges::views::transform([](const pair<coord, bool> &box) {
+        return box.first.row * 100 + box.first.col;
+      }),
+      0, plus<int>{});
+
+  cout << total << endl;
+}
