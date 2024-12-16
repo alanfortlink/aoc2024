@@ -265,7 +265,7 @@ pair<state, vector<coord>> part1(const coord &player, board &board,
 
     for (auto frame : frames) {
       GifWriteFrame(&writer, frame.data(), board[0].size() * pixelsize,
-                    board.size() * pixelsize, 1);
+                    board.size() * pixelsize, 5);
     }
   }
 
