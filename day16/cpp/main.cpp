@@ -20,6 +20,12 @@ struct coord {
   int r;
   int c;
 };
+struct state {
+  coord p;
+  int64_t acc;
+  int dir;
+  vector<coord> path;
+};
 ostream &operator<<(ostream &out, const coord &c) {
   out << "(" << c.r << ", " << c.c << ")";
   return out;
@@ -61,12 +67,33 @@ GifWriter writer;
 int pixelsize = 10;
 
 vector<uint8_t> print_board(const board &b, vector<coord> &min_path,
+                            vector<state> &seen_last_round,
                             const coord_map &path, bool is_last) {
   int height = b.size();
   int width = b[0].size();
   vector<uint8_t> colors(width * height * 4 * pixelsize * pixelsize, 0);
 
+  sort(seen_last_round.begin(), seen_last_round.end(),
+       [](const state &lhs, const state &rhs) { return lhs.acc < rhs.acc; });
   coord_set cs(min_path.begin(), min_path.end());
+
+  coord_set shortest1;
+  if (seen_last_round.size() > 0) {
+    shortest1.insert(seen_last_round[0].path.begin(),
+                     seen_last_round[0].path.end());
+  }
+
+  coord_set shortest2;
+  if (seen_last_round.size() > 1) {
+    shortest2.insert(seen_last_round[1].path.begin(),
+                     seen_last_round[1].path.end());
+  }
+
+  coord_set shortest3;
+  if (seen_last_round.size() > 2) {
+    shortest3.insert(seen_last_round[2].path.begin(),
+                     seen_last_round[2].path.end());
+  }
 
   for (int mi = 0; mi < b.size() * pixelsize; mi++) {
     int i = mi / (pixelsize);
@@ -96,6 +123,21 @@ vector<uint8_t> print_board(const board &b, vector<coord> &min_path,
       if (c == '.') {
         if (is_last) {
           set_color(0, 120, 0);
+          continue;
+        }
+
+        if (shortest1.contains({i, j})) {
+          set_color(0, 255, 0);
+          continue;
+        }
+
+        if (shortest2.contains({i, j})) {
+          set_color(0, 165, 0);
+          continue;
+        }
+
+        if (shortest3.contains({i, j})) {
+          set_color(0, 165, 0);
           continue;
         }
 
@@ -143,12 +185,6 @@ vector<uint8_t> print_board(const board &b, vector<coord> &min_path,
   return colors;
 }
 
-struct state {
-  coord p;
-  int64_t acc;
-  int dir;
-  vector<coord> path;
-};
 pair<state, vector<coord>> part1(const coord &player, board &board) {
   state min_state = state{player, numeric_limits<int>{}.max(), 0, {}};
 
@@ -159,13 +195,13 @@ pair<state, vector<coord>> part1(const coord &player, board &board) {
   vector<coord> in_best_path;
 
   vector<uint8_t> colors;
-  colors = print_board(board, in_best_path, m, false);
+  vector<state> seen_last_round;
+
+  colors = print_board(board, in_best_path, seen_last_round, m, false);
 
   GifWriteFrame(&writer, colors.data(), board[0].size() * pixelsize,
                 board.size() * pixelsize, 100);
   int count = q.size();
-
-  state min_s{player, numeric_limits<int>{}.max(), 0, {}};
 
   while (!q.empty()) {
     auto s = q.front();
@@ -188,10 +224,6 @@ pair<state, vector<coord>> part1(const coord &player, board &board) {
 
     if (c == '#') {
       continue;
-    }
-
-    if (s.acc < min_s.acc) {
-      min_s = s;
     }
 
     if (c == 'E') {
@@ -219,15 +251,16 @@ pair<state, vector<coord>> part1(const coord &player, board &board) {
       q.push(s);
     }
 
+    seen_last_round.push_back(s);
     count--;
     if (count == 0) {
-      colors = print_board(board, min_s.path, m, false);
+      colors = print_board(board, in_best_path, seen_last_round, m, false);
       count = q.size() + 1;
-      min_s = {player, numeric_limits<int>{}.max(), 0, {}};
+      seen_last_round.clear();
     }
   }
 
-  colors = print_board(board, min_s.path, m, true);
+  colors = print_board(board, in_best_path, seen_last_round, m, true);
   GifWriteFrame(&writer, colors.data(), board[0].size() * pixelsize,
                 board.size() * pixelsize, 200);
 
