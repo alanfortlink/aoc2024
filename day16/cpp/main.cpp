@@ -64,35 +64,25 @@ int rotated(int direction, int rotations) {
 }
 
 GifWriter writer;
-int pixelsize = 10;
+int pixelsize = 5;
 
 vector<uint8_t> print_board(const board &b, vector<coord> &min_path,
-                            vector<state> &seen_last_round,
-                            const coord_map &path, bool is_last) {
+                            vector<state> &slr, const coord_map &path,
+                            bool is_last) {
   int height = b.size();
   int width = b[0].size();
   vector<uint8_t> colors(width * height * 4 * pixelsize * pixelsize, 0);
 
-  sort(seen_last_round.begin(), seen_last_round.end(),
+  sort(slr.begin(), slr.end(),
        [](const state &lhs, const state &rhs) { return lhs.acc < rhs.acc; });
+
   coord_set cs(min_path.begin(), min_path.end());
 
-  coord_set shortest1;
-  if (seen_last_round.size() > 0) {
-    shortest1.insert(seen_last_round[0].path.begin(),
-                     seen_last_round[0].path.end());
-  }
-
-  coord_set shortest2;
-  if (seen_last_round.size() > 1) {
-    shortest2.insert(seen_last_round[1].path.begin(),
-                     seen_last_round[1].path.end());
-  }
-
-  coord_set shortest3;
-  if (seen_last_round.size() > 2) {
-    shortest3.insert(seen_last_round[2].path.begin(),
-                     seen_last_round[2].path.end());
+  vector<coord_set> seen_last_round;
+  int limit = min(size_t{300}, slr.size());
+  for (int i = 0; i < limit; i++) {
+    coord_set s(slr[i].path.begin(), slr[i].path.end());
+    seen_last_round.push_back(s);
   }
 
   for (int mi = 0; mi < b.size() * pixelsize; mi++) {
@@ -122,22 +112,28 @@ vector<uint8_t> print_board(const board &b, vector<coord> &min_path,
 
       if (c == '.') {
         if (is_last) {
-          set_color(0, 120, 0);
+          set_color(0, 40, 0);
           continue;
         }
 
-        if (shortest1.contains({i, j})) {
-          set_color(0, 255, 0);
-          continue;
+        if (seen_last_round.size() > 0) {
+          if (seen_last_round[0].contains({i, j})) {
+            set_color(0, 255, 0);
+            continue;
+          }
         }
 
-        if (shortest2.contains({i, j})) {
-          set_color(0, 165, 0);
-          continue;
+        int n = limit;
+        bool should_continue = false;
+        for (int ii = 1; ii < n; ii++) {
+          if (seen_last_round[ii].contains({i, j})) {
+            set_color(0, 50 + 140 * ((double)(n - ii) / n), 0);
+            should_continue = true;
+            break;
+          }
         }
 
-        if (shortest3.contains({i, j})) {
-          set_color(0, 165, 0);
+        if (should_continue) {
           continue;
         }
 
@@ -156,8 +152,9 @@ vector<uint8_t> print_board(const board &b, vector<coord> &min_path,
           }
 
           if (it->second.size() == 4) {
-            set_color(0, 120, 0);
+            set_color(0, 50, 0);
           }
+
           // int fac = ((double)it->second.size()) / 4.0;
           continue;
         }
@@ -180,12 +177,11 @@ vector<uint8_t> print_board(const board &b, vector<coord> &min_path,
     }
   }
 
-  GifWriteFrame(&writer, colors.data(), width * pixelsize, height * pixelsize,
-                0);
   return colors;
 }
 
-pair<state, vector<coord>> part1(const coord &player, board &board) {
+pair<state, vector<coord>> part1(const coord &player, board &board,
+                                 bool animate) {
   state min_state = state{player, numeric_limits<int>{}.max(), 0, {}};
 
   queue<state> q;
@@ -196,6 +192,7 @@ pair<state, vector<coord>> part1(const coord &player, board &board) {
 
   vector<uint8_t> colors;
   vector<state> seen_last_round;
+  vector<vector<uint8_t>> frames;
 
   colors = print_board(board, in_best_path, seen_last_round, m, false);
 
@@ -254,9 +251,21 @@ pair<state, vector<coord>> part1(const coord &player, board &board) {
     seen_last_round.push_back(s);
     count--;
     if (count == 0) {
-      colors = print_board(board, in_best_path, seen_last_round, m, false);
+      if (animate) {
+        colors = print_board(board, in_best_path, seen_last_round, m, false);
+        frames.push_back(colors);
+      }
       count = q.size() + 1;
       seen_last_round.clear();
+    }
+  }
+
+  if (animate) {
+    cout << "Writing file" << endl;
+
+    for (auto frame : frames) {
+      GifWriteFrame(&writer, frame.data(), board[0].size() * pixelsize,
+                    board.size() * pixelsize, 1);
     }
   }
 
@@ -268,7 +277,7 @@ pair<state, vector<coord>> part1(const coord &player, board &board) {
 }
 
 int main(int argc, char **argv) {
-  fstream fs(argc == 2 ? argv[1] : "../example2.txt");
+  fstream fs(argc >= 2 ? argv[1] : "../example2.txt");
 
   board b;
   coord start;
@@ -285,7 +294,7 @@ int main(int argc, char **argv) {
   GifBegin(&writer, "out.gif", b[0].size() * pixelsize, b.size() * pixelsize,
            200);
 
-  auto [s, in_best_path] = part1(start, b);
+  auto [s, in_best_path] = part1(start, b, argc == 3);
 
   GifEnd(&writer);
 
