@@ -61,7 +61,7 @@ GifWriter writer;
 int pixelsize = 10;
 
 vector<uint8_t> print_board(const board &b, vector<coord> &min_path,
-                            const coord_map &path) {
+                            const coord_map &path, bool is_last) {
   int height = b.size();
   int width = b[0].size();
   vector<uint8_t> colors(width * height * 4 * pixelsize * pixelsize, 0);
@@ -88,28 +88,33 @@ vector<uint8_t> print_board(const board &b, vector<coord> &min_path,
         continue;
       }
 
-      if(cs.contains({i, j})){
+      if (cs.contains({i, j})) {
         set_color(30, 255, 30);
         continue;
       }
 
       if (c == '.') {
+        if (is_last) {
+          set_color(0, 120, 0);
+          continue;
+        }
+
         auto it = path.find({i, j});
         if (it != path.end()) {
           if (it->second.size() == 1) {
-            set_color(255, 0, 0, 60);
+            set_color(255, 0, 0);
           }
 
           if (it->second.size() == 2) {
-            set_color(255, 0, 0, 120);
+            set_color(255, 0, 0);
           }
 
           if (it->second.size() == 3) {
-            set_color(255, 0, 0, 180);
+            set_color(255, 0, 0);
           }
 
           if (it->second.size() == 4) {
-            set_color(0, 100, 0, 20);
+            set_color(0, 120, 0);
           }
           // int fac = ((double)it->second.size()) / 4.0;
           continue;
@@ -154,7 +159,7 @@ pair<state, vector<coord>> part1(const coord &player, board &board) {
   vector<coord> in_best_path;
 
   vector<uint8_t> colors;
-  colors = print_board(board, in_best_path, m);
+  colors = print_board(board, in_best_path, m, false);
 
   GifWriteFrame(&writer, colors.data(), board[0].size() * pixelsize,
                 board.size() * pixelsize, 100);
@@ -200,13 +205,6 @@ pair<state, vector<coord>> part1(const coord &player, board &board) {
       continue;
     }
 
-    count--;
-    if (count == 0) {
-      colors = print_board(board, min_s.path, m);
-      count = q.size() + 1;
-      min_s = {player, numeric_limits<int>{}.max(), 0, {}};
-    }
-
     vector<state> states;
     states.push_back({s.p + D[s.dir], s.acc + 1, s.dir, s.path});
     states.push_back({s.p, s.acc + 1000, rotated(s.dir, 1), s.path});
@@ -220,8 +218,16 @@ pair<state, vector<coord>> part1(const coord &player, board &board) {
     for (auto s : states) {
       q.push(s);
     }
+
+    count--;
+    if (count == 0) {
+      colors = print_board(board, min_s.path, m, false);
+      count = q.size() + 1;
+      min_s = {player, numeric_limits<int>{}.max(), 0, {}};
+    }
   }
 
+  colors = print_board(board, min_s.path, m, true);
   GifWriteFrame(&writer, colors.data(), board[0].size() * pixelsize,
                 board.size() * pixelsize, 200);
 
