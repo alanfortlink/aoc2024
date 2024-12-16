@@ -204,6 +204,8 @@ pair<state, vector<coord>> part1(const coord &player, board &board,
     auto s = q.front();
     q.pop();
 
+    seen_last_round.push_back(s);
+
     if (s.acc > min_state.acc) {
       continue;
     }
@@ -248,7 +250,6 @@ pair<state, vector<coord>> part1(const coord &player, board &board,
       q.push(s);
     }
 
-    seen_last_round.push_back(s);
     count--;
     if (count == 0) {
       if (animate) {
