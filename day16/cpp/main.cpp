@@ -60,13 +60,13 @@ int rotated(int direction, int rotations) {
 GifWriter writer;
 int pixelsize = 10;
 
-vector<uint8_t> print_board(const board &b, vector<coord> &in_best_path,
+vector<uint8_t> print_board(const board &b, vector<coord> &min_path,
                             const coord_map &path) {
   int height = b.size();
   int width = b[0].size();
   vector<uint8_t> colors(width * height * 4 * pixelsize * pixelsize, 0);
 
-  coord_set cs(in_best_path.begin(), in_best_path.end());
+  coord_set cs(min_path.begin(), min_path.end());
 
   for (int mi = 0; mi < b.size() * pixelsize; mi++) {
     int i = mi / (pixelsize);
@@ -76,11 +76,11 @@ vector<uint8_t> print_board(const board &b, vector<coord> &in_best_path,
       int index = (i * width + j) * 4;
       char c = b[i][j];
 
-      auto set_color = [&](uint8_t r, uint8_t g, uint8_t b) {
+      auto set_color = [&](uint8_t r, uint8_t g, uint8_t b, uint8_t a = 255) {
         colors[mindex] = r;
         colors[mindex + 1] = g;
         colors[mindex + 2] = b;
-        colors[mindex + 3] = 255;
+        colors[mindex + 3] = a;
       };
 
       if (c == '#') {
@@ -88,11 +88,30 @@ vector<uint8_t> print_board(const board &b, vector<coord> &in_best_path,
         continue;
       }
 
+      if(cs.contains({i, j})){
+        set_color(30, 255, 30);
+        continue;
+      }
+
       if (c == '.') {
         auto it = path.find({i, j});
         if (it != path.end()) {
-          int fac = ((double)it->second.size()) / 4.0;
-          set_color(100 * fac, 255 * fac, 100 * fac);
+          if (it->second.size() == 1) {
+            set_color(255, 0, 0, 60);
+          }
+
+          if (it->second.size() == 2) {
+            set_color(255, 0, 0, 120);
+          }
+
+          if (it->second.size() == 3) {
+            set_color(255, 0, 0, 180);
+          }
+
+          if (it->second.size() == 4) {
+            set_color(0, 100, 0, 20);
+          }
+          // int fac = ((double)it->second.size()) / 4.0;
           continue;
         }
 
@@ -114,7 +133,8 @@ vector<uint8_t> print_board(const board &b, vector<coord> &in_best_path,
     }
   }
 
-  GifWriteFrame(&writer, colors.data(), width * pixelsize, height * pixelsize, 0);
+  GifWriteFrame(&writer, colors.data(), width * pixelsize, height * pixelsize,
+                0);
   return colors;
 }
 
@@ -136,9 +156,11 @@ pair<state, vector<coord>> part1(const coord &player, board &board) {
   vector<uint8_t> colors;
   colors = print_board(board, in_best_path, m);
 
-  GifWriteFrame(&writer, colors.data(), board[0].size() * pixelsize, board.size() * pixelsize,
-                100);
+  GifWriteFrame(&writer, colors.data(), board[0].size() * pixelsize,
+                board.size() * pixelsize, 100);
   int count = q.size();
+
+  state min_s{player, numeric_limits<int>{}.max(), 0, {}};
 
   while (!q.empty()) {
     auto s = q.front();
@@ -163,6 +185,10 @@ pair<state, vector<coord>> part1(const coord &player, board &board) {
       continue;
     }
 
+    if (s.acc < min_s.acc) {
+      min_s = s;
+    }
+
     if (c == 'E') {
       if (s.acc < min_state.acc) {
         min_state = s;
@@ -176,8 +202,9 @@ pair<state, vector<coord>> part1(const coord &player, board &board) {
 
     count--;
     if (count == 0) {
-      colors = print_board(board, in_best_path, m);
+      colors = print_board(board, min_s.path, m);
       count = q.size() + 1;
+      min_s = {player, numeric_limits<int>{}.max(), 0, {}};
     }
 
     vector<state> states;
@@ -195,8 +222,8 @@ pair<state, vector<coord>> part1(const coord &player, board &board) {
     }
   }
 
-  GifWriteFrame(&writer, colors.data(), board[0].size() * pixelsize, board.size() * pixelsize,
-                200);
+  GifWriteFrame(&writer, colors.data(), board[0].size() * pixelsize,
+                board.size() * pixelsize, 200);
 
   return {min_state, in_best_path};
 }
@@ -216,7 +243,8 @@ int main(int argc, char **argv) {
     }
   }
 
-  GifBegin(&writer, "out.gif", b[0].size() * pixelsize, b.size() * pixelsize, 200);
+  GifBegin(&writer, "out.gif", b[0].size() * pixelsize, b.size() * pixelsize,
+           200);
 
   auto [s, in_best_path] = part1(start, b);
 
