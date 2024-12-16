@@ -58,29 +58,33 @@ int rotated(int direction, int rotations) {
 }
 
 GifWriter writer;
+int pixelsize = 10;
 
 vector<uint8_t> print_board(const board &b, vector<coord> &in_best_path,
                             const coord_map &path) {
   int height = b.size();
   int width = b[0].size();
-  vector<uint8_t> colors(width * height * 4, 0);
-
-  auto set_color = [&](int i, uint8_t r, uint8_t g, uint8_t b) {
-    colors[i] = r;
-    colors[i + 1] = g;
-    colors[i + 2] = b;
-    colors[i + 3] = 255;
-  };
+  vector<uint8_t> colors(width * height * 4 * pixelsize * pixelsize, 0);
 
   coord_set cs(in_best_path.begin(), in_best_path.end());
 
-  for (int i = 0; i < b.size(); i++) {
-    for (int j = 0; j < b[i].size(); j++) {
+  for (int mi = 0; mi < b.size() * pixelsize; mi++) {
+    int i = mi / (pixelsize);
+    for (int mj = 0; mj < b[i].size() * pixelsize; mj++) {
+      int j = mj / (pixelsize);
+      int mindex = (mi * width * pixelsize + mj) * 4;
       int index = (i * width + j) * 4;
       char c = b[i][j];
 
+      auto set_color = [&](uint8_t r, uint8_t g, uint8_t b) {
+        colors[mindex] = r;
+        colors[mindex + 1] = g;
+        colors[mindex + 2] = b;
+        colors[mindex + 3] = 255;
+      };
+
       if (c == '#') {
-        set_color(index, 0, 0, 0);
+        set_color(0, 0, 0);
         continue;
       }
 
@@ -88,29 +92,29 @@ vector<uint8_t> print_board(const board &b, vector<coord> &in_best_path,
         auto it = path.find({i, j});
         if (it != path.end()) {
           int fac = ((double)it->second.size()) / 4.0;
-          set_color(index, 100 * fac, 255 * fac, 100 * fac);
+          set_color(100 * fac, 255 * fac, 100 * fac);
           continue;
         }
 
-        set_color(index, 255, 255, 255);
+        set_color(255, 255, 255);
         continue;
       }
 
       if (c == 'S') {
-        set_color(index, 0, 255, 0);
+        set_color(0, 255, 0);
         continue;
       }
 
       if (c == 'E') {
-        set_color(index, 255, 0, 0);
+        set_color(255, 0, 0);
         continue;
       }
 
-      set_color(index, 0, 0, 255);
+      set_color(0, 0, 255);
     }
   }
 
-  GifWriteFrame(&writer, colors.data(), width, height, 0);
+  GifWriteFrame(&writer, colors.data(), width * pixelsize, height * pixelsize, 0);
   return colors;
 }
 
@@ -132,7 +136,8 @@ pair<state, vector<coord>> part1(const coord &player, board &board) {
   vector<uint8_t> colors;
   colors = print_board(board, in_best_path, m);
 
-  GifWriteFrame(&writer, colors.data(), board[0].size(), board.size(), 100);
+  GifWriteFrame(&writer, colors.data(), board[0].size() * pixelsize, board.size() * pixelsize,
+                100);
   int count = q.size();
 
   while (!q.empty()) {
@@ -190,7 +195,8 @@ pair<state, vector<coord>> part1(const coord &player, board &board) {
     }
   }
 
-  GifWriteFrame(&writer, colors.data(), board[0].size(), board.size(), 200);
+  GifWriteFrame(&writer, colors.data(), board[0].size() * pixelsize, board.size() * pixelsize,
+                200);
 
   return {min_state, in_best_path};
 }
@@ -210,7 +216,7 @@ int main(int argc, char **argv) {
     }
   }
 
-  GifBegin(&writer, "out.gif", b[0].size(), b.size(), 200);
+  GifBegin(&writer, "out.gif", b[0].size() * pixelsize, b.size() * pixelsize, 200);
 
   auto [s, in_best_path] = part1(start, b);
 
