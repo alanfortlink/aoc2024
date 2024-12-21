@@ -61,11 +61,7 @@ def get_paths(pos, target, seen, keypad_id, ind = 0):
     return min_paths
 
 def get_pos(keypad, target) -> tuple[int, int]:
-    for i in range(len(keypad)):
-        for j in range(len(keypad[i])):
-            if keypad[i][j] == target:
-                return (i, j)
-    return (0, 0)
+    return [(i, r.index(target)) for i, r in enumerate(keypad) if target in r][0]
 
 def get_numeric(command):
     return int("".join([x for x in command if x.isdigit()]))
@@ -76,33 +72,12 @@ def get_expanded_length_after_n(command: str, n: int) -> int:
         return len(command)
 
     length = 0
-
-    pos = (0, 2)
+    pos = (3, 2) if n == 26 else (0, 2)
     for c in command:
-        paths = get_paths(pos, c, set(), 1)
-        pos = get_pos(dpad, c)
+        paths = get_paths(pos, c, set(), 0 if n == 26 else 1)
+        pos = get_pos(door_keypad if n == 26 else dpad, c)
         length += min([get_expanded_length_after_n(path, n-1) for path in paths])
 
     return length
 
-
-def get_length_after_n(command: str, n: int) -> int:
-
-    length = 0
-    pos = (3, 2)
-    i = 0
-    for c in command:
-        i += 1
-        print(f"{i} / {len(command)}")
-        paths = get_paths(pos, c, set(), 0)
-        pos = get_pos(door_keypad, c)
-        length += min([get_expanded_length_after_n(path, n-1) for path in paths])
-
-    return length
-
-total = 0
-
-for command in commands:
-    total += get_length_after_n(command, 26) * get_numeric(command)
-
-print(total)
+print(sum([get_expanded_length_after_n(c, 26) * get_numeric(c) for c in commands]))
